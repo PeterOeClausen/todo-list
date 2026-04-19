@@ -1,6 +1,6 @@
 namespace TodoList.Api.Models.Dtos;
 
-public class TodoListDto
+public record TodoListDto
 {
     public required Guid Id { get; set; }
     public required string Name { get; set; }
