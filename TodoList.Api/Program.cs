@@ -18,6 +18,10 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/openapi/v1.json", "TodoList API");
+            });
         }
 
         app.UseHttpsRedirection();

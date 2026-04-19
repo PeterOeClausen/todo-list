@@ -1,0 +1,8 @@
+﻿root = true
+
+[*.cs]
+# File-scoped namespace: "namespace Foo.Bar;"
+csharp_style_namespace_declarations = file_scoped:suggestion
+
+# Put using directives outside (above) the namespace
+csharp_using_directive_placement = outside_namespace:suggestion
