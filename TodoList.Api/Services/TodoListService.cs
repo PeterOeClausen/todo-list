@@ -6,19 +6,20 @@ using TodoList.Api.Models.Entities;
 
 namespace TodoList.Api.Services;
 
-public interface ITodoList
+public interface ITodoListService
 {
     Task<List<TodoListDto>> GetAllAsync();
-    Task<TodoListDto?> GetById(Guid id);
+    Task<TodoListDto?> GetByIdAsync(Guid id);
     Task<TodoListDto> AddAsync(TodoListCreateDto todoList);
-    Task<bool> DeleteById(Guid id);
+    Task<Tuple<bool, TodoListDto?>> UpdateAsync(Guid id, TodoListUpdateDto todoListUpdate);
+    Task<bool> DeleteByIdAsync(Guid id);
 }
 
-public class TodoListService : ITodoList
+public class TodoListService : ITodoListService
 {
     public TodoListService(TodoListDbContext dbContext)
     {
-           _dbContext = dbContext;
+        _dbContext = dbContext;
     }
 
     private TodoListDbContext _dbContext { get; init; }
@@ -31,25 +32,40 @@ public class TodoListService : ITodoList
             .ToListAsync();
     }
 
-    public async Task<TodoListDto?> GetById(Guid id)
+    public async Task<TodoListDto?> GetByIdAsync(Guid id)
     {
         return await _dbContext
             .TodoLists
+            .Include(x => x.TodoItems)
             .ProjectToType<TodoListDto>()
             .FirstOrDefaultAsync(x => x.Id == id);
     }
 
     public async Task<TodoListDto> AddAsync(TodoListCreateDto todoList)
     {
-        TodoListEntity todoListEntity = todoList.Adapt<TodoListEntity>();
+        TodoListEntity todoListResult = todoList.Adapt<TodoListEntity>();
         await _dbContext
             .TodoLists
-            .AddAsync(todoListEntity);
+            .AddAsync(todoListResult);
         await _dbContext.SaveChangesAsync();
-        return todoList.Adapt<TodoListDto>();
+        return todoListResult.Adapt<TodoListDto>();
     }
 
-    public async Task<bool> DeleteById(Guid id)
+    public async Task<Tuple<bool, TodoListDto?>> UpdateAsync(Guid id, TodoListUpdateDto todoListUpdate)
+    {
+        var todoList = await _dbContext
+            .TodoLists
+            .FirstOrDefaultAsync(x => x.Id == id);
+        if (todoList is null)
+        {
+            return new Tuple<bool, TodoListDto?>(false, null);
+        }
+        todoList.Name = todoListUpdate.Name;
+        await _dbContext.SaveChangesAsync();
+        return new Tuple<bool, TodoListDto?>(true, todoList.Adapt<TodoListDto>());
+    }
+
+    public async Task<bool> DeleteByIdAsync(Guid id)
     {
         var todoList = await _dbContext
             .TodoLists

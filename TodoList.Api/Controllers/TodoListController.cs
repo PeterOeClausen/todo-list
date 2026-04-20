@@ -8,12 +8,12 @@ namespace TodoList.Api.Controllers;
 [Route("[controller]")]
 public class TodoListController : ControllerBase
 {
-    public TodoListController(TodoListService todoListService)
+    public TodoListController(ITodoListService todoListService)
     {
         _todoListService = todoListService;
     }
 
-    private TodoListService _todoListService { get; init; }
+    private ITodoListService _todoListService { get; init; }
 
     [HttpGet]
     public async Task<ActionResult<List<TodoListDto>>> GetTodoLists()
@@ -24,7 +24,7 @@ public class TodoListController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<TodoListDto>> GetTodoListById([FromRoute] Guid id)
     {
-        var todoList = await _todoListService.GetById(id);
+        var todoList = await _todoListService.GetByIdAsync(id);
         if(todoList is null)
         {
             return NotFound($"No TodoList with Id '{id}' were found.");
@@ -33,16 +33,27 @@ public class TodoListController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<TodoListDto>> CreateTodoList([FromBody] TodoListCreateDto todoListDto)
+    public async Task<ActionResult<TodoListDto>> PostTodoList([FromBody] TodoListCreateDto todoListDto)
     {
         var createdTodoList = await _todoListService.AddAsync(todoListDto);
         return CreatedAtAction(nameof(GetTodoListById), new { id = createdTodoList.Id }, createdTodoList);
     }
 
+    [HttpPut("{id}")]
+    public async Task<ActionResult<TodoListDto>> PutTodoList([FromRoute] Guid id, [FromBody] TodoListUpdateDto todoListUpdate)
+    {
+        var updateResult = await _todoListService.UpdateAsync(id, todoListUpdate);
+        if (!updateResult.Item1)
+        {
+            return NotFound($"No TodoList with Id '{id}' were found.");
+        }
+        return Ok(updateResult.Item2);
+    }
+
     [HttpDelete("{id}")]
     public async Task<ActionResult> DeleteTodoList([FromRoute] Guid id)
     {
-        var deleted = await _todoListService.DeleteById(id);
+        var deleted = await _todoListService.DeleteByIdAsync(id);
         if (!deleted)
         {
             return NotFound($"No TodoList with Id '{id}' were found.");

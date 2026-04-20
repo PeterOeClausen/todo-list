@@ -44,7 +44,8 @@ public class Program
         builder.Services.AddOpenApi();
 
         // Application services
-        builder.Services.AddScoped<TodoListService>();
+        builder.Services.AddScoped<ITodoListService, TodoListService>();
+        builder.Services.AddScoped<ITodoItemService, TodoItemService>();
 
         // Build
         var app = builder.Build();
