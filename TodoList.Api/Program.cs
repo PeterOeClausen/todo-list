@@ -7,6 +7,8 @@ namespace TodoList.Api;
 
 public class Program
 {
+    private string CorsPolicy { get; } = "AllowLocalDev";
+
     public static void Main(string[] args)
     {
         new Program().Run(args);
@@ -16,10 +18,22 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services
+        AddServices(builder);
+
+        var app = builder.Build();
+
+        AddMiddleware(app);
+
+        app.Run();
+    }
+
+    private void AddServices(WebApplicationBuilder builder)
+    {
+        var configuration = builder.Configuration;
+        var services = builder.Services;
+
         // CORS
-        const string CorsPolicy = "AllowLocalDev";
-        builder.Services.AddCors(options =>
+        services.AddCors(options =>
         {
             options.AddPolicy(CorsPolicy, policy =>
             {
@@ -33,25 +47,24 @@ public class Program
         });
 
         // Database
-        var databaseConfiguration = builder.Configuration
+        var databaseConfiguration = configuration
             .GetRequiredSection("Database")
             .Get<DatabaseConfiguration>();
-        builder.Services
+        services
             .AddDbContext<TodoListDbContext>(options =>
                 options.UseSqlServer(databaseConfiguration.ConnectionString));
 
         // Controllers and OpenAPI
-        builder.Services.AddControllers();
-        builder.Services.AddOpenApi();
+        services.AddControllers();
+        services.AddOpenApi();
 
         // Application services
-        builder.Services.AddScoped<ITodoListService, TodoListService>();
-        builder.Services.AddScoped<ITodoItemService, TodoItemService>();
+        services.AddScoped<ITodoListService, TodoListService>();
+        services.AddScoped<ITodoItemService, TodoItemService>();
+    }
 
-        // Build
-        var app = builder.Build();
-
-        // Add middleware
+    private void AddMiddleware(WebApplication app)
+    {
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -65,7 +78,5 @@ public class Program
         app.UseCors(CorsPolicy);
         app.UseAuthorization();
         app.MapControllers();
-
-        app.Run();
     }
 }
