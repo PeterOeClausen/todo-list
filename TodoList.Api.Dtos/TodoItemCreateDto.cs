@@ -1,8 +1,7 @@
-namespace TodoList.Api.Models.Dtos;
+namespace TodoList.Api.Dtos;
 
-public record TodoItemDto
+public record TodoItemCreateDto
 {
-    public required Guid Id { get; set; }
     public required string Title { get; set; }
     public required bool Checked { get; set; }
     public required Guid TodoListId { get; set; }

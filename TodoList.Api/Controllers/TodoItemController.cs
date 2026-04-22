@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using TodoList.Api.Models.Dtos;
+using TodoList.Api.Dtos;
 using TodoList.Api.Services;
 
 namespace TodoList.Api.Controllers;

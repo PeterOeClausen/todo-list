@@ -1,7 +1,7 @@
 ﻿using Mapster;
 using Microsoft.EntityFrameworkCore;
 using TodoList.Api.Infrastructure.Persistance;
-using TodoList.Api.Models.Dtos;
+using TodoList.Api.Dtos;
 using TodoList.Api.Models.Entities;
 
 namespace TodoList.Api.Services;

@@ -1,4 +1,4 @@
-namespace TodoList.Api.Models.Dtos;
+namespace TodoList.Api.Dtos;
 
 public record TodoListDto
 {
