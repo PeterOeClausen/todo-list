@@ -33,6 +33,7 @@ public class TodoListController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<TodoListDto>> PostTodoList([FromBody] TodoListCreateDto todoListDto)
     {
         var createdTodoList = await _todoListService.AddAsync(todoListDto);

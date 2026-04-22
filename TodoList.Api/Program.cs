@@ -24,6 +24,7 @@ public class Program
             options.AddPolicy(CorsPolicy, policy =>
             {
                 policy.WithOrigins(
+                    "http://localhost:3000", // Frontend
                     "https://localhost:5000"
                 )
                 .AllowAnyHeader()
