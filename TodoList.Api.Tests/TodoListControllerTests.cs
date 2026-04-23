@@ -21,7 +21,7 @@ namespace TodoList.Api.Tests
         public async Task GetTodoLists()
         {
             // Act
-            List<TodoListDto>? response = await _todoListApiClient.TodoListClient.GetTodoListsAsync(CancellationToken.None);
+            List<TodoListDto>? response = await _todoListApiClient.TodoLists.GetTodoListsAsync(CancellationToken.None);
 
             // Assert
             Assert.NotNull(response);

@@ -1,17 +1,16 @@
-﻿using System.Net.Http.Json;
-using TodoList.Api.Dtos;
-
-namespace TodoList.Api.Client
+﻿namespace TodoList.Api.Client
 {
     public class TodoListApiClient
     {
         private readonly HttpClient _httpClient;
-        public TodoListClient TodoListClient { get; }
+        public TodoListClient TodoLists { get; }
+        public TodoItemClient TodoItems { get; }
 
         public TodoListApiClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            TodoListClient = new TodoListClient(_httpClient);
+            TodoLists = new TodoListClient(_httpClient);
+            TodoItems = new TodoItemClient(_httpClient);
         }
     }
 }

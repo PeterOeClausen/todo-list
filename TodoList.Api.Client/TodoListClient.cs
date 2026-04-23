@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http.Json;
-using System.Text;
+﻿using System.Net.Http.Json;
 using TodoList.Api.Dtos;
 
 namespace TodoList.Api.Client
@@ -18,7 +15,6 @@ namespace TodoList.Api.Client
 
         public Task<List<TodoListDto>?> GetTodoListsAsync(CancellationToken cancellationToken)
         {
-            // Add error handling
             return _httpClient.GetFromJsonAsync<List<TodoListDto>>(RoutePrefix, cancellationToken);
         }
 
