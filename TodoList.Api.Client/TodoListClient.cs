@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using TodoList.Api.Dtos;
 
 namespace TodoList.Api.Client
@@ -13,42 +13,108 @@ namespace TodoList.Api.Client
             _httpClient = httpClient;
         }
 
-        public Task<List<TodoListDto>?> GetTodoListsAsync(CancellationToken cancellationToken)
+        public async Task<ApiResult<List<TodoListDto>>> GetTodoListsAsync(CancellationToken cancellationToken)
         {
-            return _httpClient.GetFromJsonAsync<List<TodoListDto>>(RoutePrefix, cancellationToken);
-        }
-
-        public Task<TodoListDto?> GetTodoListByIdAsync(Guid id, CancellationToken cancellationToken)
-        {
-            return _httpClient.GetFromJsonAsync<TodoListDto>($"{RoutePrefix}/{id}", cancellationToken);
-        }
-
-        public async Task<TodoListDto?> PostTodoListAsync(TodoListCreateDto todoList, CancellationToken cancellationToken)
-        {
-            var response = await _httpClient.PostAsJsonAsync<TodoListCreateDto>(RoutePrefix, todoList, cancellationToken);
-
+            using var response = await _httpClient.GetAsync(RoutePrefix, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<TodoListDto?>(cancellationToken);
+                var value = await response.Content.ReadFromJsonAsync<List<TodoListDto>>(cancellationToken);
+                return new ApiResult<List<TodoListDto>>
+                {
+                    Value = value,
+                    IsSuccess = true,
+                    StatusCode = (int)response.StatusCode,
+                };
             }
-
-            return null;
+            return new ApiResult<List<TodoListDto>>
+            {
+                IsSuccess = false,
+                StatusCode = (int)response.StatusCode,
+                ErrorMessage = await response.Content.ReadAsStringAsync(cancellationToken),
+            };
         }
 
-        public async Task<TodoListDto?> PutTodoListAsync(Guid id, TodoListUpdateDto todoListUpdate, CancellationToken cancellationToken)
+        public async Task<ApiResult<TodoListDto>> GetTodoListByIdAsync(Guid id, CancellationToken cancellationToken)
         {
-            var response = await _httpClient.PutAsJsonAsync<TodoListUpdateDto>($"{RoutePrefix}/{id}", todoListUpdate, cancellationToken);
+            using var response = await _httpClient.GetAsync($"{RoutePrefix}/{id}", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<TodoListDto?>(cancellationToken);
+                var value = await response.Content.ReadFromJsonAsync<TodoListDto>(cancellationToken);
+                return new ApiResult<TodoListDto>
+                {
+                    Value = value,
+                    IsSuccess = true,
+                    StatusCode = (int)response.StatusCode,
+                };
             }
-            return null;
+            return new ApiResult<TodoListDto>
+            {
+                IsSuccess = false,
+                StatusCode = (int)response.StatusCode,
+                ErrorMessage = await response.Content.ReadAsStringAsync(cancellationToken),
+            };
         }
 
-        public async Task<bool> DeleteTodoListAsync(Guid id, CancellationToken cancellationToken)
+        public async Task<ApiResult<TodoListDto>> PostTodoListAsync(TodoListCreateDto todoList, CancellationToken cancellationToken)
         {
-            var response = await _httpClient.DeleteAsync($"{RoutePrefix}/{id}", cancellationToken);
-            return response.IsSuccessStatusCode;
+            using var response = await _httpClient.PostAsJsonAsync(RoutePrefix, todoList, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var value = await response.Content.ReadFromJsonAsync<TodoListDto>(cancellationToken);
+                return new ApiResult<TodoListDto>
+                {
+                    Value = value,
+                    IsSuccess = true,
+                    StatusCode = (int)response.StatusCode,
+                };
+            }
+            return new ApiResult<TodoListDto>
+            {
+                IsSuccess = false,
+                StatusCode = (int)response.StatusCode,
+                ErrorMessage = await response.Content.ReadAsStringAsync(cancellationToken),
+            };
+        }
+
+        public async Task<ApiResult<TodoListDto>> PutTodoListAsync(Guid id, TodoListUpdateDto todoListUpdate, CancellationToken cancellationToken)
+        {
+            using var response = await _httpClient.PutAsJsonAsync($"{RoutePrefix}/{id}", todoListUpdate, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var value = await response.Content.ReadFromJsonAsync<TodoListDto>(cancellationToken);
+                return new ApiResult<TodoListDto>
+                {
+                    Value = value,
+                    IsSuccess = true,
+                    StatusCode = (int)response.StatusCode,
+                };
+            }
+            return new ApiResult<TodoListDto>
+            {
+                IsSuccess = false,
+                StatusCode = (int)response.StatusCode,
+                ErrorMessage = await response.Content.ReadAsStringAsync(cancellationToken),
+            };
+        }
+
+        public async Task<ApiResult<TodoListDto>> DeleteTodoListAsync(Guid id, CancellationToken cancellationToken)
+        {
+            using var response = await _httpClient.DeleteAsync($"{RoutePrefix}/{id}", cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                // 204 No Content — no body to deserialize.
+                return new ApiResult<TodoListDto>
+                {
+                    IsSuccess = true,
+                    StatusCode = (int)response.StatusCode,
+                };
+            }
+            return new ApiResult<TodoListDto>
+            {
+                IsSuccess = false,
+                StatusCode = (int)response.StatusCode,
+                ErrorMessage = await response.Content.ReadAsStringAsync(cancellationToken),
+            };
         }
     }
 }
