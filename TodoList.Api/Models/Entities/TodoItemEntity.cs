@@ -13,7 +13,7 @@ public class TodoItemEntity
     public bool Checked { get; set; }
 
     public Guid TodoListId { get; set; }
-    public virtual TodoListEntity TodoList { get; set; }
+    public virtual TodoListEntity TodoList { get; set; } = null!;
 }
 
 /// <summary>

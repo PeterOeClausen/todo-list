@@ -40,8 +40,7 @@ public class Program
             options.AddPolicy(CorsPolicy, policy =>
             {
                 policy.WithOrigins(
-                    "http://localhost:3000", // Frontend
-                    "https://localhost:5000"
+                    "http://localhost:3000" // Frontend
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
@@ -54,7 +53,12 @@ public class Program
             .Get<DatabaseConfiguration>();
         services
             .AddDbContext<TodoListDbContext>(options =>
-                options.UseSqlServer(databaseConfiguration.ConnectionString));
+                options.UseSqlServer(
+                    databaseConfiguration!.ConnectionString,
+                    sqlOptions => sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null)));
 
         // Controllers and OpenAPI
         services.AddControllers();
@@ -72,6 +76,30 @@ public class Program
     {
         using var scope = app.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TodoListDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        const int maxAttempts = 5;
+        var delay = TimeSpan.FromSeconds(3);
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                dbContext.Database.Migrate();
+                logger.LogInformation("Database migrated successfully on attempt {Attempt}.", attempt);
+                return;
+            }
+            catch (Exception ex) when (attempt < maxAttempts)
+            {
+                logger.LogWarning(
+                    "Database not ready yet (attempt {Attempt}/{MaxAttempts}): {Message}. Retrying in {Delay}s...",
+                    attempt, maxAttempts, ex.Message, delay.TotalSeconds);
+                Thread.Sleep(delay);
+            }
+        }
+
+        // Final attempt — let exceptions bubble so the app fails loudly
+        // instead of starting in a broken state.
         dbContext.Database.Migrate();
     }
 
