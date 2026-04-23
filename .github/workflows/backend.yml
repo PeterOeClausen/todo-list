@@ -1,0 +1,87 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'TodoList.Api/**'
+      - 'TodoList.Api.Client/**'
+      - 'TodoList.Api.Dtos/**'
+      - 'TodoList.Api.Tests/**'
+      - 'todo-list.sln'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'TodoList.Api/**'
+      - 'TodoList.Api.Client/**'
+      - 'TodoList.Api.Dtos/**'
+      - 'TodoList.Api.Tests/**'
+      - 'todo-list.sln'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET)
+    # ubuntu-latest ships with Docker preinstalled, which Testcontainers needs to spin up the SQL Server image used by TodoList.Api.Tests.
+    runs-on: ubuntu-latest
+
+    env:
+      # Suppress startup bannner
+      DOTNET_NOLOGO: true
+      # Disables usage telemetry the SDK sends to Microsoft.
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+      # Skips the first-run NuGet cache warmup (populating ~/.nuget/packages with common packages). That warmup is useful on a dev machine but wasted work on ephemeral CI runners, where you've got your own NuGet cache step anyway.
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Verify Docker is available
+        # Testcontainers requires a running Docker daemon. This step fails fast
+        # with a clear message if the runner image ever changes and Docker is
+        # missing, instead of a cryptic error deep in the test run.
+        run: docker version
+
+      - name: Pre-pull SQL Server image
+        # Pulling up-front keeps the pull out of the test timing and surfaces
+        # any registry hiccups before we compile the solution.
+        run: docker pull mcr.microsoft.com/mssql/server:2025-latest
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore
+        run: dotnet restore todo-list.sln
+
+      - name: Build
+        run: dotnet build todo-list.sln --configuration Release --no-restore
+
+      - name: Test
+        run: >-
+          dotnet test todo-list.sln
+          --configuration Release
+          --no-build
+          --logger "trx;LogFileName=test-results.trx"
+          --logger "console;verbosity=normal"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+          retention-days: 2
