@@ -22,6 +22,8 @@ public class Program
 
         var app = builder.Build();
 
+        MigrateDatabase(app);
+
         AddMiddleware(app);
 
         app.Run();
@@ -61,6 +63,16 @@ public class Program
         // Application services
         services.AddScoped<ITodoListService, TodoListService>();
         services.AddScoped<ITodoItemService, TodoItemService>();
+    }
+
+    /// <summary>
+    /// Make sure the database exists and is up-to-date with the latest schema.
+    /// </summary>
+    private void MigrateDatabase(WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TodoListDbContext>();
+        dbContext.Database.Migrate();
     }
 
     private void AddMiddleware(WebApplication app)
