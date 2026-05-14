@@ -40,7 +40,7 @@ jobs:
         # CI=true makes react-scripts run tests once (non-watch) and fail the build on any test failures or lint warnings.
         env:
           CI: true
-        run: npm test -- --watchAll=false --passWithNoTests
+        run: npm test -- --passWithNoTests
 
       - name: Build production bundle
         env:
