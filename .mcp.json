@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "todolist-mcp": {
+      "command": "dotnet",
+      "args": ["run", "--project", "TodoList.Api.Mcp"]
+    }
+  }
+}
