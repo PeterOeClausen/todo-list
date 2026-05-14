@@ -8,6 +8,7 @@ The scope intentionally stays small — a handful of endpoints around todo lists
 
 - A REST API built on **.NET 10** with **Entity Framework** against an **SQL Server**, using **Mapster** for DTO mapping, and OpenAPI/Swagger for documentation.
 - A strongly-typed **C# client** for the API that can be published as a NuGet package and reused from other services in a microservice setup.
+- An **MCP server** that exposes the todo API as tools consumable by AI assistants (Claude, Cursor, etc.) via the Model Context Protocol, backed by the typed C# client.
 - A React **frontend** (React 19, TypeScript, MUI 9, React Router 6) with light/dark theming, built on Create React App (soon to be updated to Vite).
 - An integration-test project that spins up a real SQL Server instance in Docker via **Testcontainers**, runs migrations, and uses **Respawn** to truncate data between tests. Tests call the API through the C# client. This also adds the ability to call an endpoint, and see that the intended database change has happened.
 - GitHub CI/CD that builds and tests both frontend and backend. Which triggers only if changes happens in either directory paths.
@@ -16,45 +17,46 @@ The scope intentionally stays small — a handful of endpoints around todo lists
 ## Architecture at a glance
 
 ```
-                     +---------------------------+
-                     |  Frontend/todo-app        |
-                     |  React + TypeScript + MUI |
-                     +------------+--------------+
-                                  |  fetch (NSwag-generated TS client)
-                                  v
-                     +---------------------------+
-                     |  TodoList.Api             |
-                     |  ASP.NET Core + EF Core   |
-                     +------+-------+------------+
-                            |       |
-         ProjectReference   |       |  UseSqlServer
-                            v       v
-       +--------------------+     +-----------------------+
-       |  TodoList.Api.Dtos |     |  SQL Server (Docker)  |
-       +--------------------+     +-----------------------+
-                 ^
-                 |  ProjectReference
-                 |
-       +---------+-----------+                +--------------------------+
-       | TodoList.Api.Client |<---------------|  TodoList.Api.Tests      |
-       |  (typed C# client)  |                |  xUnit + Testcontainers  |
-       +---------------------+                |  + Respawn + WebAppFactory|
-                                              +--------------------------+
+  +------------------+              +---------------------------+
+  | AI assistant     |              |  Frontend/todo-app        |
+  | Claude / Cursor  |              |  React + TypeScript + MUI |
+  +--------+---------+              +------------+--------------+
+           | MCP (stdio)                         |  fetch (NSwag-generated TS client)
+           v                                     v
+  +-------------------+             +---------------------------+
+  | TodoList.Api.Mcp  |             |  TodoList.Api             |
+  | MCP server        |    +------->|  ASP.NET Core + EF Core   |
+  +--------+----------+    |        +------+-------+------------+
+           | ProjectRef    |               |                    |
+           v             HTTPS         ProjectRef          UseSqlServer
+  +---------------------+  |               v                    v
+  | TodoList.Api.Client +--+      +--------------------+  +-----------------------+
+  | (typed C# client)   +-------->| TodoList.Api.Dtos  |  |  SQL Server (Docker)  |
+  +--------+------------+ ProjRef +--------------------+  +-----------------------+
+           ^
+           | ProjectRef
+           |
+  +--------------------------+
+  |  TodoList.Api.Tests      |
+  |  xUnit + Testcontainers  |
+  |  + Respawn + WebAppFactory|
+  +--------------------------+
 ```
 
 The `TodoList.Api.Dtos` project sits in the middle on purpose: DTOs are the contract, the API produces them, and the C# client consumes them without duplicating type definitions.
 
 ## Repository layout
 
-| Path                                           | What it is                                                                                                                       |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| [`TodoList.Api`](./TodoList.Api)               | The ASP.NET Core Web API — controllers, services, EF Core DbContext, migrations. See [its README](./TodoList.Api/README.md).     |
-| [`TodoList.Api.Dtos`](./TodoList.Api.Dtos)     | Request/response DTOs shared between the API and the C# client.                                                                  |
-| [`TodoList.Api.Client`](./TodoList.Api.Client) | Typed C# HTTP client over the API, packaged to be shared with other services. See [its README](./TodoList.Api.Client/README.md). |
-| [`TodoList.Api.Tests`](./TodoList.Api.Tests)   | Integration tests using a real SQL Server container. See [its README](./TodoList.Api.Tests/README.md).                           |
-| [`Frontend/todo-app`](./Frontend/todo-app)     | React + TypeScript SPA. See [its README](./Frontend/todo-app/README.md).                                                         |
-| [`Scripts`](./Scripts)                         | Helper scripts, including `generate-ts-client.sh` which regenerates the frontend TS client from the API's OpenAPI spec.          |
-| `todo-list.sln`                                | Solution file tying the four .NET projects together.                                                                             |
+| Path                                           | What it is                                                                                                                           |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| [`TodoList.Api`](./TodoList.Api)               | The ASP.NET Core Web API — controllers, services, EF Core DbContext, migrations. See [its README](./TodoList.Api/README.md).         |
+| [`TodoList.Api.Dtos`](./TodoList.Api.Dtos)     | Request/response DTOs shared between the API and the C# client.                                                                      |
+| [`TodoList.Api.Client`](./TodoList.Api.Client) | Typed C# HTTP client over the API, packaged to be shared with other services. See [its README](./TodoList.Api.Client/README.md).     |
+| [`TodoList.Api.Mcp`](./TodoList.Api.Mcp)       | MCP server that exposes the todo API as tools for AI assistants via stdio transport. See [its README](./TodoList.Api.Mcp/README.md). |
+| [`TodoList.Api.Tests`](./TodoList.Api.Tests)   | Integration tests using a real SQL Server container. See [its README](./TodoList.Api.Tests/README.md).                               |
+| [`Frontend/todo-app`](./Frontend/todo-app)     | React + TypeScript SPA. See [its README](./Frontend/todo-app/README.md).                                                             |
+| [`Scripts`](./Scripts)                         | Helper scripts, including `generate-ts-client.sh` which regenerates the frontend TS client from the API's OpenAPI spec.              |
+| `todo-list.sln`                                | Solution file tying the five .NET projects together.                                                                                 |
 
 ## Prerequisites
 
