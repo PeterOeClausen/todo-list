@@ -65,7 +65,13 @@ public class Program
         services.AddControllers();
         services.AddOpenApi();
 
-        // Commands
+        AddCommands(builder);
+    }
+
+    private void AddCommands(WebApplicationBuilder builder)
+    {
+        var services = builder.Services;
+
         services.AddScoped<CreateTodoItem>();
         services.AddScoped<CreateTodoList>();
         services.AddScoped<DeleteTodoItem>();
