@@ -65,17 +65,19 @@ React page (useState/useEffect)
   → NSwag-generated TodoApiClient (src/clients/todo-api-client.ts)
   → HTTPS to https://localhost:5000
   → ASP.NET Core Controller (thin — validates input, delegates)
-  → Service (ITodoListService / ITodoItemService) — maps DTOs↔Entities via Mapster, runs validation
+  → Command (Commands/TodoLists/*.cs, Commands/TodoItems/*.cs) — maps DTOs↔Entities via Mapster, runs validation
   → EF Core DbContext → SQL Server
 ```
 
 ### Key design decisions
 
-**Thin controllers, logic in services.** Controllers translate service results to HTTP status codes (e.g., `(false, null)` tuple → 404). Services own validation, entity mapping (Mapster), and EF coordination.
+**One command per operation.** Instead of service classes grouping all operations for an entity, each operation lives in its own file (e.g. `Commands/TodoLists/CreateTodoList.cs`). `TodoListDbContext` is injected directly via primary constructor. Controllers inject only the specific commands they need. Adding a new operation means adding a new file — no existing class is touched.
+
+**Thin controllers, logic in commands.** Controllers translate command results to HTTP status codes (e.g., `(false, null)` tuple → 404). Commands own validation, entity mapping (Mapster), and EF coordination.
 
 **Shared DTO project.** `TodoList.Api.Dtos` is referenced by both `TodoList.Api` and `TodoList.Api.Client`, making the C# client typesafe against the real API contract without duplication.
 
-**`ApiResult<T>` in the C# client.** The client never throws on HTTP failures; it always returns `ApiResult<T>` with a `StatusCode` and optional `ErrorMessage`. Services return `Tuple<bool, Dto?>` patterns for the same reason — failures are expected outcomes, not exceptions.
+**`ApiResult<T>` in the C# client.** The client never throws on HTTP failures; it always returns `ApiResult<T>` with a `StatusCode` and optional `ErrorMessage`. Commands return `(bool Success, Dto? Result)` value tuples for the same reason — failures are expected outcomes, not exceptions.
 
 **Database auto-migration on startup.** `Program.MigrateDatabase()` applies EF migrations automatically when the API starts, with exponential-backoff retries. No manual migration step is needed in development.
 

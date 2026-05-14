@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using TodoList.Api.Commands.TodoItems;
+using TodoList.Api.Commands.TodoLists;
 using TodoList.Api.Configuration;
 using TodoList.Api.Infrastructure.Persistance;
-using TodoList.Api.Services;
 
 namespace TodoList.Api;
 
@@ -64,9 +65,15 @@ public class Program
         services.AddControllers();
         services.AddOpenApi();
 
-        // Application services
-        services.AddScoped<ITodoListService, TodoListService>();
-        services.AddScoped<ITodoItemService, TodoItemService>();
+        // Commands
+        services.AddScoped<CreateTodoItem>();
+        services.AddScoped<CreateTodoList>();
+        services.AddScoped<DeleteTodoItem>();
+        services.AddScoped<DeleteTodoList>();
+        services.AddScoped<GetTodoListById>();
+        services.AddScoped<GetTodoLists>();
+        services.AddScoped<UpdateTodoItem>();
+        services.AddScoped<UpdateTodoList>();
     }
 
     /// <summary>
